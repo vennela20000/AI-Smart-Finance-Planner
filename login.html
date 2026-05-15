@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus AI - Secure Access</title>
+    <style>
+        /* BASIC SETUP */
+        body {
+            background-color: #0f172a;
+            color: white;
+            font-family: sans-serif;
+            margin: 0;
+            display: flex;             /* Centering everything */
+            justify-content: center;   /* Horizontal center */
+            align-items: center;       /* Vertical center */
+            height: 100vh;
+        }
+
+        /* THE BOX */
+        .auth-card {
+            background-color: #1e293b;
+            padding: 40px;
+            border-radius: 20px;
+            width: 350px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        .text-primary { color: #6366f1; }
+
+        /* INPUTS & BUTTONS */
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            box-sizing: border-box; /* Keeps padding inside the width */
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 12px;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-main:hover { background-color: #4f46e5; }
+
+        .link-text {
+            color: #94a3b8;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 14px;
+            margin-top: 15px;
+            display: block;
+        }
+
+        /* HIDDEN BY DEFAULT */
+        .hide { display: none; }
+        .error { color: #f87171; font-size: 13px; margin-top: 10px; }
+        .success { color: #4ade80; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <h1 class="text-primary">NEXUS AI</h1>
+    <p id="title">Welcome back, Auditor.</p>
+
+    <input type="text" id="user" placeholder="Username">
+
+    <div id="email-box" class="hide">
+        <input type="email" id="email" placeholder="Email Address">
+    </div>
+
+    <input type="password" id="pass" placeholder="Password">
+
+    <button id="auth-btn" onclick="handleAuth()" class="btn-main">Login</button>
+
+    <span id="toggle-link" onclick="toggleMode()" class="link-text">
+        Don't have an account? Register
+    </span>
+
+    <div id="status-msg"></div>
+</div>
+
+<script>
+    // --- GLOBAL STATE ---
+    let isLogin = true;
+
+    // --- FUNCTION: Switch between Login and Register ---
+    function toggleMode() {
+        isLogin = !isLogin;
+
+        const emailBox = document.getElementById('email-box');
+        const title = document.getElementById('title');
+        const btn = document.getElementById('auth-btn');
+        const link = document.getElementById('toggle-link');
+
+        if (isLogin) {
+            emailBox.classList.add('hide');
+            title.innerText = "Welcome back, Auditor.";
+            btn.innerText = "Login";
+            link.innerText = "Don't have an account? Register";
+        } else {
+            emailBox.classList.remove('hide');
+            title.innerText = "Join the Nexus Network.";
+            btn.innerText = "Create Account";
+            link.innerText = "Already a member? Login";
+        }
+    }
+
+    // --- FUNCTION: Send data to Java Backend ---
+    async function handleAuth() {
+        const msg = document.getElementById('status-msg');
+        const username = document.getElementById('user').value;
+        const password = document.getElementById('pass').value;
+        const email = document.getElementById('email').value;
+
+        // Simple Validation
+        if (!username || !password) {
+            msg.className = "error";
+            msg.innerText = "Please fill all fields.";
+            return;
+        }
+
+        msg.className = "";
+        msg.innerText = "Connecting...";
+
+        // Decide which API to call
+        const url = isLogin ? "/api/financial/auth/login" : "/api/financial/auth/register";
+
+        const payload = { username, password };
+        if (!isLogin) payload.email = email;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                if (isLogin) {
+                    // Go to Dashboard
+                    window.location.href = "/dashboard.html";
+                } else {
+                    msg.className = "success";
+                    msg.innerText = "Account created! Now login.";
+                    toggleMode(); // Switch back to login for them
+                }
+            } else {
+                msg.className = "error";
+                msg.innerText = "Invalid credentials or User exists.";
+            }
+        } catch (error) {
+            msg.className = "error";
+            msg.innerText = "Server is not responding.";
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+/db-data/
+.mvn/
+.idea/
+*.class
+*.jar
+*.log
+.DS_Store

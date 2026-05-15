@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus AI - Financial Auditor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; padding-bottom: 50px; }
+        .glass-card { background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-bottom: 20px; }
+        .ai-section { background: #020617; color: white; border-radius: 20px; padding: 25px; min-height: 380px; border: 1px solid #06b6d4; }
+        .btn-save { background: #6366f1; color: white; border-radius: 10px; padding: 12px; font-weight: 700; width: 100%; border: none; transition: 0.3s; }
+        .btn-save:hover { background: #4f46e5; transform: translateY(-2px); }
+        .text-primary { color: #6366f1 !important; }
+        .budget-alert { background: #450a0a !important; border: 1px solid #f87171 !important; }
+        .progress { height: 8px; border-radius: 10px; background: #334155; margin-top: 10px; }
+        .form-control, .form-select { background: #0f172a; border: 1px solid #334155; color: white; }
+        .form-control:focus, .form-select:focus { background: #1e293b; color: white; border-color: #6366f1; box-shadow: none; }
+        #advice { font-size: 0.95rem; line-height: 1.8; border-left: 3px solid #06b6d4; padding: 5px 15px; color: #94a3b8; white-space: pre-line; }
+        .table { color: #e2e8f0; }
+        .expense-row:hover { background: #334155; transition: 0.2s; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar shadow-sm bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand fs-3 fw-bold text-primary">NEXUS AI</span>
+        <button onclick="logout()" class="btn btn-sm btn-outline-danger px-3 rounded-pill">Logout System</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="glass-card mb-4" id="budgetCard">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="small text-muted mb-0 fw-bold">MONTHLY BUDGET GOAL</p>
+                <div class="d-flex align-items-center">
+                    <span class="fs-4 fw-bold me-1">₹</span>
+                    <input type="number" id="budgetGoal" class="form-control form-control-sm border-0 fs-4 fw-bold p-0 text-primary w-50 bg-transparent" onchange="updateBudget()">
+                </div>
+            </div>
+            <div id="budgetStatus" class="badge rounded-pill bg-success p-2 px-3">Status: Within Limit</div>
+        </div>
+        <div class="progress">
+            <div id="budgetProgress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-6">
+            <div class="glass-card">
+                <p class="small text-muted mb-1 uppercase fw-bold">Total Spent</p>
+                <h2 id="total-amount" class="text-primary fw-bold">₹ 0</h2>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="glass-card">
+                <p class="small text-muted mb-1 uppercase fw-bold">Top Leak</p>
+                <h2 id="top-cat" class="fw-bold" style="color: #a855f7;">...</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-3">Add Transaction</h5>
+                <input type="text" id="desc" class="form-control mb-3" placeholder="Description">
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><input type="number" id="amt" class="form-control" placeholder="Amount"></div>
+                    <div class="col-6"><select id="cat" class="form-select"><option value="">Loading...</option></select></div>
+                </div>
+                <div class="p-3 bg-dark rounded-3 border border-secondary mb-3">
+                    <label class="small fw-bold text-muted mb-1">NEW CATEGORY?</label>
+                    <div class="input-group">
+                        <input type="text" id="newCatName" class="form-control form-control-sm" placeholder="e.g. Travel">
+                        <button class="btn btn-primary btn-sm" onclick="addNewCategory()">+</button>
+                    </div>
+                </div>
+                <button onclick="addExpense()" class="btn-save">Sync to Nexus</button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-3 text-center">Allocation Analytics</h5>
+                <div style="height: 220px;"><canvas id="myChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="ai-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0 text-info">Omni-Auditor Engine</h5>
+                    <button onclick="refreshAdvice()" class="btn btn-sm text-white-50 p-0"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+                <div id="advice" class="fst-italic small">Initializing behavior analysis...</div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="glass-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0">Ledger History</h5>
+                    <input type="text" id="searchBox" class="form-control form-control-sm w-50" placeholder="Search..." onkeyup="searchTable()">
+                </div>
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table align-middle">
+                        <tbody id="expense-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const api = "/api/financial";
+    let chartInstance = null;
+
+    window.onload = async () => {
+        console.log("Nexus Dashboard Initializing...");
+        try {
+            const budgetRes = await fetch(`${api}/budget`);
+            if (budgetRes.ok) {
+                const budgetVal = await budgetRes.text();
+                document.getElementById('budgetGoal').value = budgetVal || 5000;
+            } else if (budgetRes.status === 401 || budgetRes.status === 403) {
+                window.location.href = "/login.html";
+                return;
+            }
+
+            loadCategories().catch(e => console.error("Categories API missing"));
+            loadTableAndChart().catch(e => console.error("Expenses API missing"));
+            refreshAdvice().catch(e => console.warn("AI Advice API missing"));
+
+        } catch (e) {
+            console.error("Dashboard Load Error:", e);
+        }
+    };
+
+    // --- NEW CATEGORY FUNCTION (FIXES THE RED ERROR) ---
+    async function addNewCategory() {
+        const name = document.getElementById('newCatName').value.trim();
+        if(!name) return;
+
+        try {
+            const res = await fetch(`${api}/categories/add`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name: name })
+            });
+            if(res.ok) {
+                document.getElementById('newCatName').value = '';
+                await loadCategories(); // Refresh the list
+            }
+        } catch (e) {
+            console.error("Failed to add category:", e);
+        }
+    }
+
+    // --- ADD EXPENSE FUNCTION (FIXES SYNC TO NEXUS) ---
+    async function addExpense() {
+        const desc = document.getElementById('desc').value.trim();
+        const amount = document.getElementById('amt').value;
+        const catId = document.getElementById('cat').value;
+
+        if(!desc || !amount || !catId) {
+            alert("Please fill all fields and select a category.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${api}/add`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    description: desc,
+                    amount: parseFloat(amount),
+                    category: { id: parseInt(catId) }
+                })
+            });
+
+            if(res.ok) {
+                document.getElementById('desc').value = '';
+                document.getElementById('amt').value = '';
+                await loadTableAndChart();
+                refreshAdvice();
+            }
+        } catch (e) {
+            console.error("Sync failed:", e);
+        }
+    }
+
+    async function loadCategories() {
+        const res = await fetch(`${api}/categories`);
+        if (!res.ok) throw new Error("Categories 404");
+        const cats = await res.json();
+        const select = document.getElementById('cat');
+        if(cats.length === 0) {
+            select.innerHTML = '<option value="">Add a category first</option>';
+        } else {
+            select.innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+    }
+
+    async function loadTableAndChart() {
+        const res = await fetch(`${api}/all`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById('expense-list');
+        tbody.innerHTML = '';
+        let total = 0;
+        let chartData = {};
+
+        data.forEach(item => {
+            total += item.amount;
+            const catName = item.category?.name || 'Misc';
+            chartData[catName] = (chartData[catName] || 0) + item.amount;
+
+            tbody.innerHTML += `
+                <tr class="expense-row border-bottom border-secondary">
+                    <td>${item.description}</td>
+                    <td class="text-primary fw-bold text-end">₹${item.amount}</td>
+                    <td class="text-center"><span class="badge border border-info text-info">${catName}</span></td>
+                    <td class="text-end">
+                        <button onclick="deleteMe(${item.id})" class="btn btn-sm text-danger"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+        });
+
+        document.getElementById('total-amount').innerText = `₹ ${total.toLocaleString()}`;
+        updateBudgetUI(total);
+        updateChart(chartData);
+
+        const topRes = await fetch(`${api}/top-category`);
+        if(topRes.ok) document.getElementById('top-cat').innerText = await topRes.text();
+    }
+
+    async function refreshAdvice() {
+        const box = document.getElementById('advice');
+        box.innerHTML = '<i class="fas fa-microchip fa-spin"></i> Analyzing...';
+        const res = await fetch(`${api}/advice`);
+        if(res.ok) box.innerText = await res.text();
+        else box.innerText = "Audit engine standby.";
+    }
+
+    async function deleteMe(id) {
+        if(confirm("Permanently delete this entry?")) {
+            await fetch(`${api}/delete/${id}`, { method: 'DELETE' });
+            await loadTableAndChart();
+            refreshAdvice();
+        }
+    }
+
+    function updateBudgetUI(total) {
+        const goal = parseFloat(document.getElementById('budgetGoal').value) || 1;
+        const percent = Math.min((total / goal) * 100, 100);
+        const bar = document.getElementById('budgetProgress');
+        bar.style.width = percent + "%";
+
+        const status = document.getElementById('budgetStatus');
+        if(total > goal) {
+            status.innerText = "LIMIT BREACHED";
+            status.className = "badge bg-danger p-2 px-3";
+            document.getElementById('budgetCard').classList.add('budget-alert');
+            bar.classList.replace('bg-primary', 'bg-danger');
+        } else {
+            status.innerText = "Status: Optimal";
+            status.className = "badge bg-success p-2 px-3";
+            document.getElementById('budgetCard').classList.remove('budget-alert');
+            bar.classList.replace('bg-danger', 'bg-primary');
+        }
+    }
+
+    async function updateBudget() {
+        const goal = document.getElementById('budgetGoal').value;
+        await fetch(`${api}/budget/save?goal=${goal}`, { method: 'POST' });
+        loadTableAndChart();
+    }
+
+    function updateChart(chartData) {
+        if(Object.keys(chartData).length === 0) return;
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(document.getElementById('myChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(chartData),
+                datasets: [{
+                    data: Object.values(chartData),
+                    backgroundColor: ['#6366f1', '#06b6d4', '#ec4899', '#f59e0b', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, cutout: '80%', responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function searchTable() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        document.querySelectorAll('.expense-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
+        });
+    }
+
+    function logout() {
+        fetch("/api/financial/auth/logout", { method: 'POST' })
+        .then(() => window.location.href = "/login.html");
+    }
+</script>
+</body>
+</html>
