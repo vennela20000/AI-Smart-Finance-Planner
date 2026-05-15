@@ -3,6 +3,7 @@ A full-stack financial management platform that leverages Artificial Intelligenc
 
 # Key Features
 AI Financial Consultant: Integrated with Spring AI and Groq (Llama 3) to provide natural language analysis of spending habits.
+
 Secure Authentication: Professional-grade security using Spring Security and JWT (JSON Web Tokens).
 Data Persistence: Robust relational data management using PostgreSQL and Spring Data JPA.
 Containerized Architecture: Fully dockerized setup using Docker Compose for consistent environment deployment.
