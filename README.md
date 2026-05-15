@@ -56,7 +56,11 @@ docker compose up --build
 The application will be available at http://localhost:8080
 
 # Project Structure
+
 src/main/java: Backend logic, AI services, and Security configurations.
+
 src/main/resources: Static frontend assets and application properties.
+
 Dockerfile: Configuration for the Java application container.
+
 docker-compose.yml: Orchestration for the App and Database services.
