@@ -48,7 +48,7 @@ Windows
 setx GROQ_API_KEY "your_key_here"
 
 Launch with Docker:
-
+ 
 Bash
 
 docker compose up --build
